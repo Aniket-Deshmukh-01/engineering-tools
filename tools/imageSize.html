@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advanced Image Compressor</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+      }
+      .drop-zone {
+        border: 2px dashed #007bff;
+        border-radius: 10px;
+        padding: 40px;
+        cursor: pointer;
+        color: #007bff;
+        margin-bottom: 20px;
+      }
+      .drop-zone.dragover {
+        background-color: #f0f8ff;
+      }
+      .drop-zone.uploaded {
+        background-color: #d4edda;
+        color: #155724;
+        border-color: #c3e6cb;
+      }
+      progress {
+        width: 100%;
+        margin-top: 20px;
+      }
+      img {
+        max-width: 100%;
+        margin-top: 20px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+      }
+      .hidden {
+        display: none;
+      }
+      button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        color: #fff;
+        background-color: #007bff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      select {
+        margin-top: 10px;
+        padding: 10px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Advanced Image Compressor</h1>
+      <div id="dropZone" class="drop-zone">
+        Upload Image or Drag and drop Here
+      </div>
+      <input type="file" id="fileInput" class="hidden" accept="image/*" />
+      <input
+        type="number"
+        id="targetSizeInput"
+        placeholder="Enter size in KB"
+        style="margin-top: 20px"
+      />
+      <select id="formatSelect">
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/webp">WebP</option>
+      </select>
+      <button id="compressButton" disabled>Compress</button><br />
+      <progress id="progressBar" value="0" max="100" class="hidden"></progress>
+      <img id="outputImage" class="hidden" />
+      <p id="outputInfo" class="hidden"></p>
+      <a id="downloadButton" class="hidden">Download Compressed Image</a>
+    </div>
+
+    <script>
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const compressButton = document.getElementById("compressButton");
+      const progressBar = document.getElementById("progressBar");
+      const outputImage = document.getElementById("outputImage");
+      const outputInfo = document.getElementById("outputInfo");
+      const downloadButton = document.getElementById("downloadButton");
+      const targetSizeInput = document.getElementById("targetSizeInput");
+      const formatSelect = document.getElementById("formatSelect");
+
+      let selectedFile = null;
+
+      // Handle drag-and-drop
+      dropZone.addEventListener("click", () => fileInput.click());
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("dragover")
+      );
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        selectedFile = e.dataTransfer.files[0];
+        validateFile();
+      });
+
+      fileInput.addEventListener("change", () => {
+        selectedFile = fileInput.files[0];
+        validateFile();
+      });
+
+      // Validate file
+      function validateFile() {
+        if (selectedFile && selectedFile.type.startsWith("image/")) {
+          compressButton.disabled = false;
+          dropZone.textContent = `Selected file: ${selectedFile.name}`;
+        } else {
+          alert("Please select a valid image file.");
+          compressButton.disabled = true;
+        }
+      }
+
+      // Compress Image
+      compressButton.addEventListener("click", async () => {
+        const targetSizeKB = parseInt(targetSizeInput.value, 10);
+        if (isNaN(targetSizeKB) || targetSizeKB < 5) {
+          alert("Please enter a valid target size (minimum 5KB).");
+          return;
+        }
+        const format = formatSelect.value;
+        progressBar.classList.remove("hidden");
+        progressBar.value = 0;
+
+        const compressedImage = await compressImage(
+          selectedFile,
+          targetSizeKB * 1024,
+          format
+        );
+        if (compressedImage) {
+          displayResult(compressedImage, format);
+        }
+      });
+
+      async function compressImage(file, targetSize, format) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+              let quality = 0.9;
+              let step = 0.05;
+              let iteration = 0;
+
+              const adjustQuality = () => {
+                const dataUrl = canvas.toDataURL(format, quality);
+                const size = atob(dataUrl.split(",")[1]).length;
+
+                if (Math.abs(size - targetSize) <= 1024 || iteration > 20) {
+                  progressBar.value = 100;
+                  resolve(dataUrl);
+                  return;
+                }
+
+                quality += size > targetSize ? -step : step;
+                quality = Math.max(0.05, Math.min(quality, 1));
+                iteration++;
+                progressBar.value = (iteration / 20) * 100;
+
+                setTimeout(adjustQuality, 50); // Delay to update progress
+              };
+
+              adjustQuality();
+            };
+          };
+        });
+      }
+
+      // Display Result
+      function displayResult(dataUrl, format) {
+        progressBar.classList.add("hidden");
+        outputImage.src = dataUrl;
+        outputImage.classList.remove("hidden");
+        const size = (atob(dataUrl.split(",")[1]).length / 1024).toFixed(2);
+        outputInfo.textContent = `Compressed size: ${size} KB (${format})`;
+        outputInfo.classList.remove("hidden");
+
+        // Enable download
+        downloadButton.href = dataUrl;
+        downloadButton.download = `compressed_image.${format.split("/")[1]}`;
+        downloadButton.classList.remove("hidden");
+      }
+    </script>
+    <script>
+      async function compressImage(file, targetSize, format) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
+              let width = img.width;
+              let height = img.height;
+
+              canvas.width = width;
+              canvas.height = height;
+
+              let quality = 0.9; // Start with high quality
+              let step = 0.05; // Step to adjust quality
+              let iteration = 0;
+
+              const adjustQualityAndSize = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL(format, quality);
+                const size = atob(dataUrl.split(",")[1]).length;
+
+                if (size <= targetSize || iteration > 30) {
+                  resolve(dataUrl);
+                  return;
+                }
+
+                // If size exceeds target, reduce quality or downscale
+                if (size > targetSize) {
+                  if (quality > 0.05) {
+                    quality -= step;
+                  } else {
+                    // Reduce dimensions if quality is already minimal
+                    width = Math.floor(width * 0.9);
+                    height = Math.floor(height * 0.9);
+                    canvas.width = width;
+                    canvas.height = height;
+                  }
+                }
+                iteration++;
+                adjustQualityAndSize();
+              };
+
+              adjustQualityAndSize();
+            };
+          };
+        });
+      }
+    </script>
+    <script>
+      function validateFile() {
+        if (selectedFile && selectedFile.type.startsWith("image/")) {
+          compressButton.disabled = false;
+          dropZone.textContent = `Selected file: ${selectedFile.name}`;
+          dropZone.classList.add("uploaded"); // Add green background
+        } else {
+          alert("Please select a valid image file.");
+          compressButton.disabled = true;
+        }
+      }
+      fileInput.addEventListener("change", () => {
+        selectedFile = fileInput.files[0];
+        validateFile();
+      });
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        selectedFile = e.dataTransfer.files[0];
+        validateFile(); // Validate file after drop
+      });
+      function displayResult(dataUrl, format) {
+        progressBar.classList.add("hidden");
+        outputImage.src = dataUrl;
+        outputImage.classList.remove("hidden");
+        const size = (atob(dataUrl.split(",")[1]).length / 1024).toFixed(2);
+        outputInfo.textContent = `Compressed size: ${size} KB (${format})`;
+        outputInfo.classList.remove("hidden");
+
+        // Enable download button
+        downloadButton.href = dataUrl;
+        downloadButton.download = `compressed_image.${format.split("/")[1]}`;
+        downloadButton.classList.remove("hidden");
+        downloadButton.textContent = "Download Compressed Image";
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Conversion Tool (Suports images All Formats)</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background-color: #f4f4f9;
+      }
+
+      h1 {
+        color: #333;
+      }
+
+      .drag-and-drop {
+        border: 3px dashed #2b68ea;
+        border-radius: 20px;
+        width: 80%;
+        max-width: 500px;
+        padding: 40px;
+        text-align: center;
+        transition: border-color 0.5s, background-color 0.3s;
+      }
+
+      .drag-and-drop.dragging {
+        border-color: #4caf50;
+        background-color: #e8f5e9;
+      }
+
+      .file-input {
+        display: none;
+      }
+
+      .convert-section {
+        margin-top: 40px;
+      }
+
+      select,
+      button {
+        padding: 10px;
+        margin: 10px 0;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        width: 100%;
+        max-width: 200px;
+      }
+
+      button {
+        background-color: #4caf50;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      .output {
+        margin-top: 20px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Image Conversion Tool</h1>
+    <div id="dropZone" class="drag-and-drop">
+      Upload Image or Drag and drop Here
+      <input type="file" id="fileInput" class="file-input" accept="image/*" />
+    </div>
+
+    <div class="convert-section">
+      <label for="fileType">Convert to:</label>
+      <select id="fileType"></select>
+      <button id="convertBtn">Convert and Download</button>
+    </div>
+
+    <div id="output" class="output"></div>
+
+    <script>
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const convertBtn = document.getElementById("convertBtn");
+      const fileType = document.getElementById("fileType");
+      const output = document.getElementById("output");
+
+      let uploadedFile = null;
+
+      // Drag-and-Drop Handlers
+      dropZone.addEventListener("click", () => fileInput.click());
+
+      dropZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        dropZone.classList.add("dragging");
+      });
+
+      dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("dragging");
+      });
+
+      dropZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("dragging");
+        handleFileUpload(event.dataTransfer.files[0]);
+      });
+
+      fileInput.addEventListener("change", (event) => {
+        handleFileUpload(event.target.files[0]);
+      });
+
+      function handleFileUpload(file) {
+        if (file) {
+          uploadedFile = file;
+          dropZone.textContent = `Uploaded: ${file.name}`;
+          dropZone.style.borderColor = "#4caf50";
+          updateFileTypeOptions(file);
+        }
+      }
+
+      function updateFileTypeOptions(file) {
+        const ext = file.name.split(".").pop().toLowerCase();
+        const options = [
+          "jpg",
+          "jpeg",
+          "png",
+          "webp",
+          "bmp",
+          "gif",
+          "tiff",
+          "ico",
+          "heif",
+          "heic",
+        ];
+
+        fileType.innerHTML = options
+          .map((opt) => `<option value="${opt}">${opt.toUpperCase()}</option>`)
+          .join("");
+      }
+
+      convertBtn.addEventListener("click", () => {
+        if (!uploadedFile) {
+          output.textContent = "Please upload a file first.";
+          return;
+        }
+
+        const selectedFormat = fileType.value;
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+          const dataUrl = event.target.result;
+          convertImage(dataUrl, selectedFormat);
+        };
+
+        reader.readAsDataURL(uploadedFile);
+      });
+
+      function convertImage(dataUrl, format) {
+        const img = new Image();
+
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+
+          const convertedDataUrl = canvas.toDataURL(`image/${format}`);
+          downloadFile(convertedDataUrl, format);
+        };
+
+        img.src = dataUrl;
+      }
+
+      function downloadFile(dataUrl, format) {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `converted_file.${format}`;
+        link.click();
+        output.textContent = "File converted and downloaded successfully!";
+      }
+    </script>
+  </body>
+</html>
