@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unit Conversion Tool</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+      }
+      .container {
+        width: 80%;
+        margin: 30px auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      select,
+      input {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        border-radius: 4px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .result {
+        font-size: 18px;
+        margin-top: 20px;
+        text-align: center;
+        padding: 10px;
+        background-color: #93f06b;
+        border-radius: 4px;
+      }
+      .section {
+        margin-top: 20px;
+      }
+      .section h2 {
+        text-align: center;
+        font-size: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Unit Conversion Tool</h1>
+
+      <div class="form-group">
+        <label for="quantity">Enter Quantity:</label>
+        <input
+          type="number"
+          id="quantity"
+          placeholder="Enter quantity"
+          oninput="convertUnit()"
+        />
+      </div>
+
+      <!-- Dropdowns for selecting the category, units to convert from and to -->
+      <div class="form-group">
+        <label for="category">Select Unit Category:</label>
+        <select id="category" onchange="populateUnits()">
+          <option value="length">Length</option>
+          <option value="mass">Mass</option>
+          <option value="time">Time</option>
+          <option value="temperature">Temperature</option>
+          <option value="speed">Speed</option>
+          <option value="area">Area</option>
+          <option value="volume">Volume</option>
+          <option value="force">Force</option>
+          <option value="pressure">Pressure</option>
+          <option value="energy">Energy</option>
+          <option value="power">Power</option>
+          <option value="electric">Electric</option>
+          <option value="flowRate">Flow Rate</option>
+          <option value="torque">Torque</option>
+          <option value="density">Density</option>
+          <option value="resistance">Electric Resistance</option>
+          <option value="concentration">Concentration</option>
+          <option value="sound">Sound</option>
+          <option value="frequency">Frequency</option>
+          <option value="magneticFlux">Magnetic Flux</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="fromUnit">Select Unit to Convert From:</label>
+        <select id="fromUnit" onchange="convertUnit()">
+          <!-- Options will be populated based on category selection -->
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="toUnit">Select Unit to Convert To:</label>
+        <select id="toUnit" onchange="convertUnit()">
+          <!-- Options will be populated based on category selection -->
+        </select>
+      </div>
+
+      <button onclick="convertUnit()">Convert</button>
+
+      <div class="result" id="result">
+        <!-- Conversion result will appear here -->
+      </div>
+    </div>
+
+    <script>
+      // Conversion rates for various units
+      const conversionRates = {
+        length: {
+          meter: {
+            kilometer: 0.001,
+            mile: 0.000621371,
+            centimeter: 100,
+            millimeter: 1000,
+          },
+          kilometer: {
+            meter: 1000,
+            mile: 0.621371,
+            centimeter: 100000,
+            millimeter: 1000000,
+          },
+          mile: {
+            meter: 1609.34,
+            kilometer: 1.60934,
+            centimeter: 160934,
+            millimeter: 1609340,
+          },
+          centimeter: {
+            meter: 0.01,
+            kilometer: 0.00001,
+            mile: 0.0000062137,
+            millimeter: 10,
+          },
+          millimeter: {
+            meter: 0.001,
+            kilometer: 0.000001,
+            mile: 0.000000621371,
+            centimeter: 0.1,
+          },
+        },
+        mass: {
+          gram: {
+            kilogram: 0.001,
+            ton: 0.000001,
+            pound: 0.00220462,
+            ounce: 0.035274,
+          },
+          kilogram: {
+            gram: 1000,
+            ton: 0.000001,
+            pound: 2.20462,
+            ounce: 35.274,
+          },
+          ton: { gram: 1000000, kilogram: 1000, pound: 2204.62, ounce: 35274 },
+          pound: {
+            gram: 453.592,
+            kilogram: 0.453592,
+            ton: 0.000453592,
+            ounce: 16,
+          },
+          ounce: {
+            gram: 28.3495,
+            kilogram: 0.0283495,
+            ton: 2.835e-5,
+            pound: 0.0625,
+          },
+        },
+        time: {
+          second: {
+            minute: 1 / 60,
+            hour: 1 / 3600,
+            day: 1 / 86400,
+            week: 1 / 604800,
+          },
+          minute: { second: 60, hour: 1 / 60, day: 1 / 1440, week: 1 / 10080 },
+          hour: { second: 3600, minute: 60, day: 1 / 24, week: 1 / 168 },
+          day: { second: 86400, minute: 1440, hour: 24, week: 1 / 7 },
+          week: { second: 604800, minute: 10080, hour: 168, day: 7 },
+        },
+        // Add conversion rates for other categories...
+      };
+
+      // Function to populate the unit options based on selected category
+      function populateUnits() {
+        const category = document.getElementById("category").value;
+        const fromUnitSelect = document.getElementById("fromUnit");
+        const toUnitSelect = document.getElementById("toUnit");
+
+        // Clear previous options
+        fromUnitSelect.innerHTML = "";
+        toUnitSelect.innerHTML = "";
+
+        // Get the units for the selected category
+        const units = Object.keys(conversionRates[category]);
+
+        // Populate the dropdowns with units
+        units.forEach((unit) => {
+          const optionFrom = document.createElement("option");
+          optionFrom.value = unit;
+          optionFrom.textContent = unit.charAt(0).toUpperCase() + unit.slice(1);
+          fromUnitSelect.appendChild(optionFrom);
+
+          const optionTo = document.createElement("option");
+          optionTo.value = unit;
+          optionTo.textContent = unit.charAt(0).toUpperCase() + unit.slice(1);
+          toUnitSelect.appendChild(optionTo);
+        });
+
+        // Trigger conversion to update result
+        convertUnit();
+      }
+
+      // Function to convert units
+      function convertUnit() {
+        const quantity = parseFloat(document.getElementById("quantity").value);
+        const category = document.getElementById("category").value;
+        const fromUnit = document.getElementById("fromUnit").value;
+        const toUnit = document.getElementById("toUnit").value;
+
+        if (isNaN(quantity)) {
+          document.getElementById("result").textContent =
+            "Please enter a valid quantity.";
+          return;
+        }
+
+        if (
+          conversionRates[category] &&
+          conversionRates[category][fromUnit] &&
+          conversionRates[category][fromUnit][toUnit] !== undefined
+        ) {
+          const rate = conversionRates[category][fromUnit][toUnit];
+          const result = quantity * rate;
+          document.getElementById(
+            "result"
+          ).textContent = `Converted Value: ${result} ${toUnit}`;
+        } else {
+          document.getElementById("result").textContent =
+            "Conversion not available for selected units.";
+        }
+      }
+
+      // Initialize the page by populating the units for the default category
+      populateUnits();
+    </script>
+  </body>
+</html>

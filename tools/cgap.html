@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CGPA/SGPA/GPA Calculator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: #f4f4f4;
+        margin: 20px;
+      }
+      .container {
+        max-width: 700px;
+        margin: auto;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      .semester-input {
+        margin: 10px 0;
+      }
+      button {
+        padding: 10px 15px;
+        border: none;
+        background: #007bff;
+        color: white;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      input {
+        padding: 5px;
+        width: 80px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>CGPA/SGPA/GPA & Percentage Calculator</h2>
+      <label for="semesters">Select Number of Semesters:</label>
+      <select id="semesters" onchange="generateInputs()">
+        <option value="">-- Select --</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+      </select>
+      <div id="marks-container"></div>
+      <label for="format">Select Output Format:</label>
+      <select id="format">
+        <option value="cgpa">CGPA</option>
+        <option value="sgpa">SGPA</option>
+        <option value="gpa">GPA</option>
+        <option value="percentage">Percentage</option>
+      </select>
+      <br /><br />
+      <button onclick="calculateResult()">Calculate</button>
+      <h3 id="result"></h3>
+    </div>
+
+    <script>
+      function generateInputs() {
+        let semesters = document.getElementById("semesters").value;
+        let container = document.getElementById("marks-container");
+        container.innerHTML = "";
+
+        for (let i = 1; i <= semesters; i++) {
+          let div = document.createElement("div");
+          div.className = "semester-input";
+          div.innerHTML = `<label>Semester ${i} SGPA: </label><input type="number" step="0.01" id="sgpa${i}" min="0" max="10">`;
+          container.appendChild(div);
+        }
+      }
+
+      function calculateResult() {
+        let semesters = document.getElementById("semesters").value;
+        let format = document.getElementById("format").value;
+        let totalSGPA = 0;
+
+        for (let i = 1; i <= semesters; i++) {
+          let sgpa = parseFloat(document.getElementById("sgpa" + i).value) || 0;
+          totalSGPA += sgpa;
+        }
+
+        let result;
+        let cgpa = totalSGPA / semesters;
+
+        if (format === "cgpa") {
+          result = cgpa.toFixed(2);
+        } else if (format === "sgpa") {
+          result = totalSGPA.toFixed(2);
+        } else if (format === "gpa") {
+          result = cgpa.toFixed(2); // GPA is usually similar to CGPA
+        } else if (format === "percentage") {
+          result = ((cgpa - 0.75) * 10).toFixed(2) + "%";
+        }
+
+        document.getElementById(
+          "result"
+        ).innerText = `Your ${format.toUpperCase()} is: ${result}`;
+      }
+    </script>
+  </body>
+</html>
